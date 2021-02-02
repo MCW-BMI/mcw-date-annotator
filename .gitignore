@@ -1,7 +1,7 @@
 .empty/
 .vscode/
 node_modules/
-
+.idea
 .env
 dist.yaml
 openapi.yaml
