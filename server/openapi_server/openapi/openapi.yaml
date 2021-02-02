@@ -1,0 +1,268 @@
+openapi: 3.0.2
+info:
+  contact:
+    email: thomas.schaffter@sagebionetworks.org
+    name: The NLP Sandbox Team
+    url: https://Sage-Bionetworks.github.io/nlp-sandbox-schemas
+  description: |
+    The OpenAPI specification implemented by NLP Sandbox Date Annotators.
+    # Overview
+    This NLP tool detects date references in the clinical note specified and returns a list of date annotations.
+  license:
+    name: Apache 2.0
+    url: https://github.com/Sage-Bionetworks/nlp-sandbox/blob/main/LICENSE
+  title: NLP Sandbox Date Annotator API
+  version: 0.2.2
+  x-logo:
+    url: https://Sage-Bionetworks.github.io/nlp-sandbox-schemas/logo.png
+servers:
+- url: http://example.com/api/v1
+- url: https://example.com/api/v1
+tags:
+- description: Operations about text date annotations
+  name: TextDateAnnotation
+- description: Operations about this API service
+  name: Service
+paths:
+  /service:
+    get:
+      description: Get information about the service
+      operationId: service
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Service'
+          description: Success
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: The specified resource was not found
+      summary: Get service information
+      tags:
+      - Service
+      x-openapi-router-controller: openapi_server.controllers.service_controller
+  /textDateAnnotations:
+    post:
+      description: Return the date annotations found in a clinical note
+      operationId: create_text_date_annotations
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TextDateAnnotationRequest'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TextDateAnnotations'
+          description: Success
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+      summary: Annotate dates in a clinical note
+      tags:
+      - TextDateAnnotation
+      x-openapi-router-controller: openapi_server.controllers.text_date_annotation_controller
+components:
+  responses:
+    Unauthorized:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+      description: Unauthorized
+    NotFound:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+      description: The specified resource was not found
+  schemas:
+    Note:
+      description: A clinical note
+      example:
+        noteType: loinc:LP29684-5
+        patientId: 507f1f77bcf86cd799439011
+        id: id
+        text: On 12/26/2020, Ms. Chloe Price met with Dr. Prescott.
+      properties:
+        id:
+          description: The ID of the note
+          readOnly: true
+          type: string
+        text:
+          description: The content of the clinical note
+          example: On 12/26/2020, Ms. Chloe Price met with Dr. Prescott.
+          type: string
+        noteType:
+          description: The note type (LOINC concept)
+          example: loinc:LP29684-5
+          type: string
+        patientId:
+          description: The patient ID
+          example: 507f1f77bcf86cd799439011
+          type: string
+      required:
+      - noteType
+      - text
+      type: object
+    TextDateAnnotationRequest:
+      description: An annotation request
+      example:
+        note:
+          noteType: loinc:LP29684-5
+          patientId: 507f1f77bcf86cd799439011
+          # id: id
+          text: On 12/26/2020, Ms. Chloe Price met with Dr. Prescott.
+      properties:
+        note:
+          $ref: '#/components/schemas/Note'
+      type: object
+    TextAnnotation:
+      description: An annotation in a text
+      properties:
+        start:
+          description: The position of the first character
+          example: 42
+          type: integer
+        length:
+          description: The length of the annotation
+          example: 10
+          type: integer
+        text:
+          description: The string annotated
+          type: string
+        confidence:
+          description: The confidence in the accuracy of the annotation
+          example: 95
+          format: float
+          maximum: 100
+          minimum: 0
+          type: number
+      required:
+      - length
+      - start
+      type: object
+    TextDateAnnotation:
+      allOf:
+      - $ref: '#/components/schemas/TextAnnotation'
+      - $ref: '#/components/schemas/TextDateAnnotation_allOf'
+      description: A date annotation in a text
+      example:
+        start: 42
+        length: 10
+        text: 10/26/2020
+        dateFormat: MM/DD/YYYY
+      type: object
+    TextDateAnnotations:
+      description: A list of text date annotations
+      example:
+        textDateAnnotations:
+        - start: 42
+          length: 10
+          text: 10/26/2020
+          dateFormat: MM/DD/YYYY
+        - start: 42
+          length: 10
+          text: 10/26/2020
+          dateFormat: MM/DD/YYYY
+      properties:
+        textDateAnnotations:
+          description: A list of text date annotations
+          items:
+            $ref: '#/components/schemas/TextDateAnnotation'
+          type: array
+      type: object
+    Error:
+      description: Problem details (tools.ietf.org/html/rfc7807)
+      properties:
+        title:
+          description: A human readable documentation for the problem type
+          type: string
+        status:
+          description: The HTTP status code
+          type: integer
+        detail:
+          description: A human readable explanation specific to this occurrence of
+            the problem
+          type: string
+        type:
+          description: An absolute URI that identifies the problem type
+          type: string
+      required:
+      - status
+      - title
+      type: object
+    Service:
+      description: Information about an NLP service
+      example:
+        license: Apache-2.0
+        authorEmail: author@example.com
+        author: Example Author
+        name: awesome-date-annotator
+        description: An awesome Date Annotator based on regex patterns
+        repository: github:awesome-org/awesome-date-annotator
+        version: 1.0.0
+        url: https://openapi-generator.tech
+      properties:
+        name:
+          description: The service name
+          example: awesome-date-annotator
+          maxLength: 60
+          minLength: 3
+          pattern: ^[a-z0-9]+(?:-[a-z0-9]+)*$
+          type: string
+        version:
+          description: The version of the service (SemVer string)
+          example: 1.0.0
+          minLength: 1
+          pattern: ^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$
+          type: string
+        license:
+          description: The license of this service (spdx.org/licenses Identifier)
+          example: Apache-2.0
+          type: string
+        repository:
+          description: The place where the code lives
+          example: github:awesome-org/awesome-date-annotator
+          type: string
+        description:
+          description: A short, one-sentence summary of the service
+          example: An awesome Date Annotator based on regex patterns
+          maxLength: 100
+          type: string
+        author:
+          description: The author of the service
+          example: Example Author
+          type: string
+        authorEmail:
+          description: The email address of the author
+          example: author@example.com
+          format: email
+          type: string
+        url:
+          description: The URL to the homepage of the service
+          format: uri
+          type: string
+      type: object
+    TextDateAnnotation_allOf:
+      properties:
+        dateFormat:
+          description: Date format (ISO 8601)
+          example: MM/DD/YYYY
+          type: string
+      type: object
